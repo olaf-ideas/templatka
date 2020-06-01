@@ -242,6 +242,18 @@ struct bignum {
 	}
 	bignum operator/(const bignum &v) const { return divmod(*this, v); }
 	bignum operator%(const bignum &v) const { return *this-(*this/v)*v; }
+	friend bignum Powmod(bignum &b, long long pot, long long MOD) {
+		bignum r = 1;
+		for (b=b%bignum(MOD); pot; pot>>=1, b = (b*b)%MOD)
+			if (pot&1) r = (r*b)%bignum(MOD);
+		return r;
+	}
+	friend bignum Pow(bignum &b, long long pot) {
+		bignum r = 1;
+		for (; pot; pot >>= 1, b*=b)
+			if (pot&1) r*=b;
+		return r;
+	}
 };
 
 int main() {
