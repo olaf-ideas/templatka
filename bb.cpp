@@ -3,19 +3,13 @@
 using namespace std;
 using ll = long long;
 
-///src = https://gist.github.com/ar-pa/957297fb3f88996ead11
-
 const int base = 1000000000, baseDigits = 9;
 struct bignum {
     vector<int> a;
     int sign;
     bignum() : sign(1) {}
-	bignum(long long b) {
-		*this = b;
-	}
-	bignum(const string &s) {
-		read(s);
-	}
+	bignum(long long b) { *this = b; }
+	bignum(const string &s) { read(s); }
     int size() {
         if (a.empty()) return 0;
         int ans = ((int)a.size()-1)*baseDigits;
@@ -23,22 +17,15 @@ struct bignum {
         while (ac) ans++,ac/=10;
         return ans;
     }
-    bool isZero() const {
-		return a.empty() || (a.size() == 1 && !a[0]);
-	}
-	void operator=(const bignum &b) {
-        sign = b.sign, a = b.a;
-    }
+    bool isZero() const { return a.empty() || (a.size() == 1 && !a[0]); }
+	void operator=(const bignum &b) { sign = b.sign, a = b.a; }
     void operator=(long long b) {
         sign = 1;
         a.clear();
         if (b < 0) sign = -1, b = -b;
         for(;b > 0; b = b/base) a.push_back((int)(b%base));
     }
-    bool operator<(const long long &b) const {
-        bignum tmp; tmp = b;
-        return *this < tmp;
-    }
+    bool operator<(const long long &b) const { return *this < bignum(b); }
     bool operator<(const bignum &b) const {
         if (sign != b.sign) return sign < b.sign;
         if (a.size() != b.a.size()) return a.size()*sign < b.a.size()*b.sign;
@@ -52,10 +39,7 @@ struct bignum {
     bool operator>=(const bignum &b) const { return !(*this < b); }
     bool operator==(const bignum &b) const { return !(*this < b) && !(b < *this); }
     bool operator!=(const bignum &b) const { return *this < b || b < *this; }
-    bignum operator/(const long long &v) {
-        bignum tmp; tmp = v;
-        return *this/tmp;
-    }
+    bignum operator/(const long long &v) { return *this/bignum(v); }
     bignum abs() const {
         bignum res = *this;
         res.sign *= res.sign;
@@ -95,18 +79,10 @@ struct bignum {
         res.sign = -sign;
         return res;
     }
-    void operator+=(const bignum &v) {
-		*this = *this + v;
-	}
-	void operator-=(const bignum &v) {
-		*this = *this - v;
-	}
-	void operator*=(const bignum &v) {
-		*this = *this * v;
-	}
-	void operator/=(const bignum &v) {
-		*this = *this / v;
-	}
+    void operator+=(const bignum &v) { *this = *this + v; }
+	void operator-=(const bignum &v) { *this = *this - v; }
+	void operator*=(const bignum &v) { *this = *this * v; }
+	void operator/=(const bignum &v) { *this = *this / v; }
     void operator+=(const long long &v) {
         bignum tmp; tmp.a.push_back((int)v);
         return *this += tmp;
@@ -190,14 +166,8 @@ struct bignum {
 			long long cur = a[i] * (long long) v + carry;
 			carry = (int) (cur / base);
 			a[i] = (int) (cur % base);
-			//asm("divl %%ecx" : "=a"(carry), "=d"(a[i]) : "A"(cur), "c"(base));
 		}
 		trim();
-	}
-	bignum operator*(int v) const {
-		bignum res = *this;
-		res *= v;
-		return res;
 	}
 	void operator*=(long long v) {
 		if (v < 0)
@@ -212,15 +182,10 @@ struct bignum {
 			long long cur = a[i] * (long long) v + carry;
 			carry = (int) (cur / base);
 			a[i] = (int) (cur % base);
-			//asm("divl %%ecx" : "=a"(carry), "=d"(a[i]) : "A"(cur), "c"(base));
 		}
 		trim();
 	}
-	bignum operator*(long long v) const {
-		bignum res = *this;
-		res *= v;
-		return res;
-	}  
+	bignum operator*(long long v) const { return *this * bignum(v); }  
 	void read(const string &s) {
 		sign = 1;
 		a.clear();
@@ -247,54 +212,38 @@ struct bignum {
 	friend ostream& operator<<(ostream &stream, const bignum &v) {
 		if (v.sign == -1) stream << '-';
 		stream << (v.a.empty() ? 0 : v.a.back());
-		for (int i = (int) v.a.size() - 2; i >= 0; --i)
-			stream << setw(baseDigits) << setfill('0') << v.a[i];
+		for (int i = (int) v.a.size() - 2; i >= 0; --i) stream << setw(baseDigits) << setfill('0') << v.a[i];
 		return stream;
 	}
-	bignum gcd(const bignum &a, const bignum &b) const {
-		return b.isZero() ? a : gcd(b,a%b);
-	}
-	bignum lcm(const bignum &a, const bignum &b) const {
-		return a/gcd(a,b)*b;
-	}
-	bignum divmod(const bignum &a1, const bignum &b1) const{
+	bignum gcd(const bignum &c, const bignum &b) const { return b.isZero() ? c : gcd(b,c%b); }
+	bignum lcm(const bignum &c, const bignum &b) const { return c/gcd(c,b)*b; }
+	bignum divmod(const bignum &a1, const bignum &b1) const {
 		int norm = base / (b1.a.back() + 1);
 		bignum a = a1.abs() * norm;
 		bignum b = b1.abs() * norm;
 		bignum q, r;
 		q.a.resize(a.a.size());
- 
-		for (int i = a.a.size() - 1; i >= 0; i--) {
+		for (int i = (int)a.a.size() - 1; i >= 0; i--) {
 			r *= base;
 			r += a.a[i];
 			int s1 = r.a.size() <= b.a.size() ? 0 : r.a[b.a.size()];
 			int s2 = r.a.size() <= b.a.size() - 1 ? 0 : r.a[b.a.size() - 1];
-			int d = ((long long) base * s1 + s2) / b.a.back();
+			int d = (int)(((long long) base * s1 + s2) / (long long)b.a.back());
 			r -= b * d;
 			while (r < 0)
 				r += b, --d;
 			q.a[i] = d;
 		}
- 
 		q.sign = a1.sign * b1.sign;
 		r.sign = a1.sign;
 		q.trim();
 		r.trim();
 		return q;
 	}
-	bignum operator/(const bignum &v) const{
-		return divmod(*this, v);
-	}
-	bignum operator%(const bignum &v) const{
-		bignum tmp = *this-(*this/v)*v;
-		return tmp;
-	}
+	bignum operator/(const bignum &v) const { return divmod(*this, v); }
+	bignum operator%(const bignum &v) const { return *this-(*this/v)*v; }
 };
 
 int main() {
-    bignum a, b;
-    cin >> a >> b;
-	cout << a/b << " " << a%b << "\n";
-	cout << bignum(123) << "\n";
     return 0;
 }
