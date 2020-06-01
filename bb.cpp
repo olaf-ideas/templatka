@@ -23,7 +23,10 @@ struct bignum {
         while (ac) ans++,ac/=10;
         return ans;
     }
-    void operator=(const bignum &b) {
+    bool isZero() const {
+		return a.empty() || (a.size() == 1 && !a[0]);
+	}
+	void operator=(const bignum &b) {
         sign = b.sign, a = b.a;
     }
     void operator=(long long b) {
@@ -217,8 +220,44 @@ struct bignum {
 		bignum res = *this;
 		res *= v;
 		return res;
+	}  
+	void read(const string &s) {
+		sign = 1;
+		a.clear();
+		int pos = 0;
+		while (pos < (int) s.size() && (s[pos] == '-' || s[pos] == '+')) {
+			if (s[pos] == '-')
+				sign = -sign;
+			pos++;
+		}
+		for (int i = (int)s.size() - 1; i >= pos; i -= baseDigits) {
+			int x = 0;
+			for (int j = max(pos, i - baseDigits + 1); j <= i; j++)
+				x = x * 10 + s[j] - '0';
+			a.push_back(x);
+		}
+		trim();
 	}
-    bignum divmod(const bignum &a1, const bignum &b1) {
+	friend istream& operator>>(istream &stream, bignum &v) {
+		string s;
+		stream >> s;
+		v.read(s);
+		return stream;
+	}
+	friend ostream& operator<<(ostream &stream, const bignum &v) {
+		if (v.sign == -1) stream << '-';
+		stream << (v.a.empty() ? 0 : v.a.back());
+		for (int i = (int) v.a.size() - 2; i >= 0; --i)
+			stream << setw(baseDigits) << setfill('0') << v.a[i];
+		return stream;
+	}
+	bignum gcd(const bignum &a, const bignum &b) {
+		return b.isZero() ? a : gcd(b,a%b);
+	}
+	bignum lcm(const bignum &a, const bignum &b) {
+		return a/gcd(a,b)*b;
+	}
+	bignum divmod(const bignum &a1, const bignum &b1) {
 		int norm = base / (b1.a.back() + 1);
 		bignum a = a1.abs() * norm;
 		bignum b = b1.abs() * norm;
@@ -249,36 +288,6 @@ struct bignum {
 	bignum operator%(const bignum &v) {
 		bignum tmp = *this-(*this/v)*v;
 		return tmp;
-	}
-	void read(const string &s) {
-		sign = 1;
-		a.clear();
-		int pos = 0;
-		while (pos < (int) s.size() && (s[pos] == '-' || s[pos] == '+')) {
-			if (s[pos] == '-')
-				sign = -sign;
-			pos++;
-		}
-		for (int i = (int)s.size() - 1; i >= pos; i -= baseDigits) {
-			int x = 0;
-			for (int j = max(pos, i - baseDigits + 1); j <= i; j++)
-				x = x * 10 + s[j] - '0';
-			a.push_back(x);
-		}
-		trim();
-	}
-	friend istream& operator>>(istream &stream, bignum &v) {
-		string s;
-		stream >> s;
-		v.read(s);
-		return stream;
-	}
-	friend ostream& operator<<(ostream &stream, const bignum &v) {
-		if (v.sign == -1) stream << '-';
-		stream << (v.a.empty() ? 0 : v.a.back());
-		for (int i = (int) v.a.size() - 2; i >= 0; --i)
-			stream << setw(baseDigits) << setfill('0') << v.a[i];
-		return stream;
 	}
 };
 
