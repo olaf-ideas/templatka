@@ -251,13 +251,13 @@ struct bignum {
 			stream << setw(baseDigits) << setfill('0') << v.a[i];
 		return stream;
 	}
-	bignum gcd(const bignum &a, const bignum &b) {
+	bignum gcd(const bignum &a, const bignum &b) const {
 		return b.isZero() ? a : gcd(b,a%b);
 	}
-	bignum lcm(const bignum &a, const bignum &b) {
+	bignum lcm(const bignum &a, const bignum &b) const {
 		return a/gcd(a,b)*b;
 	}
-	bignum divmod(const bignum &a1, const bignum &b1) {
+	bignum divmod(const bignum &a1, const bignum &b1) const{
 		int norm = base / (b1.a.back() + 1);
 		bignum a = a1.abs() * norm;
 		bignum b = b1.abs() * norm;
@@ -282,10 +282,10 @@ struct bignum {
 		r.trim();
 		return q;
 	}
-	bignum operator/(const bignum &v) {
+	bignum operator/(const bignum &v) const{
 		return divmod(*this, v);
 	}
-	bignum operator%(const bignum &v) {
+	bignum operator%(const bignum &v) const{
 		bignum tmp = *this-(*this/v)*v;
 		return tmp;
 	}
