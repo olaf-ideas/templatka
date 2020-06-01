@@ -5,13 +5,14 @@ using ll = long long;
 
 ///src = https://gist.github.com/ar-pa/957297fb3f88996ead11
 
-class bignum {
-    const int base = 1000000000, baseDigits = 9;
+const int base = 1000000000, baseDigits = 9;
+struct bignum {
     vector<int> a;
     int sign;
+    bignum() : sign(1) {}
     int size() {
         if (a.empty()) return 0;
-        int ans = (a.size()-1)*baseDigits;
+        int ans = ((int)a.size()-1)*baseDigits;
         int ac = a.back();
         while (ac) ans++,ac/=10;
         return ans;
@@ -23,10 +24,235 @@ class bignum {
         sign = 1;
         a.clear();
         if (b < 0) sign = -1, b = -b;
-        for(;b > 0; b = b/base) a.push_back(b%base);
+        for(;b > 0; b = b/base) a.push_back((int)(b%base));
     }
+    bool operator<(const long long &b) const {
+        bignum tmp; tmp = b;
+        return *this < tmp;
+    }
+    bool operator<(const bignum &b) const {
+        if (sign != b.sign) return sign < b.sign;
+        if (a.size() != b.a.size()) return a.size()*sign < b.a.size()*b.sign;
+        for (int i = (int)a.size()-1; i >= 0; i--)
+            if (a[i] != b.a[i])
+                return a[i]*sign < b.a[i]*b.sign;
+        return 0;
+    }
+    bool operator>(const bignum &b) const { return b < *this; }
+    bool operator<=(const bignum &b) const { return !(b < *this); }
+    bool operator>=(const bignum &b) const { return !(*this < b); }
+    bool operator==(const bignum &b) const { return !(*this < b) && !(b < *this); }
+    bool operator!=(const bignum &b) const { return *this < b || b < *this; }
+    bignum operator/(const long long &v) {
+        bignum tmp; tmp = v;
+        return *this/tmp;
+    }
+    bignum abs() const {
+        bignum res = *this;
+        res.sign *= res.sign;
+        return res;
+    }
+    bignum operator+(const bignum &b) const {
+        if (sign == b.sign) {
+            bignum res = b;
+            for (int i = 0, carry = 0; i < (int) max(a.size(),b.a.size()) || carry; i++) {
+                if (i==(int)res.a.size()) res.a.push_back(0);
+                res.a[i]+=carry+(i < (int) a.size() ? a[i] : 0);
+                carry = res.a[i] >= base;
+                if (carry) res.a[i] -= base;
+            }
+            return res;
+        }
+        return *this - (-b);
+    }
+    bignum operator-(const bignum &b) const {
+        if (sign == b.sign) {
+            if (abs() >= b.abs()) {
+                bignum res = *this;
+                for (int i = 0, carry = 0; i < (int)b.a.size() || carry; i++) {
+                    res.a[i] -= carry+ (i < (int) b.a.size() ? b.a[i] : 0);
+                    carry = res.a[i]<0;
+                    if (carry) res.a[i]+=base;
+                }
+                res.trim();
+                return res;
+            }
+            return -(b-*this);
+        }
+        return *this + (-b);
+    }
+    bignum operator-() const {
+        bignum res = *this;
+        res.sign = -sign;
+        return res;
+    }
+    void operator+=(const bignum &v) {
+		*this = *this + v;
+	}
+	void operator-=(const bignum &v) {
+		*this = *this - v;
+	}
+	void operator*=(const bignum &v) {
+		*this = *this * v;
+	}
+	void operator/=(const bignum &v) {
+		*this = *this / v;
+	}
+    void operator+=(const long long &v) {
+        bignum tmp; tmp.a.push_back(v);
+        return *this += tmp;
+    }
+    void trim() {
+        while (!a.empty() && !a.back()) a.pop_back();
+        if (a.empty()) sign = 1;
+    }
+    static vector<int> convertBase(const vector<int> &a, int old_digits, int new_digits) {
+		vector<long long> p(max(old_digits, new_digits) + 1);
+		p[0] = 1;
+		for (int i = 1; i < (int) p.size(); i++) p[i] = p[i - 1] * 10;
+		vector<int> res;
+		long long cur = 0;
+		int cur_digits = 0;
+		for (int i = 0; i < (int) a.size(); i++) {
+			cur += a[i] * p[cur_digits];
+			cur_digits += old_digits;
+			while (cur_digits >= new_digits) {
+				res.push_back(int(cur % p[new_digits]));
+				cur /= p[new_digits];
+				cur_digits -= new_digits;
+			}
+		}
+		res.push_back((int) cur);
+		while (!res.empty() && !res.back()) res.pop_back();
+		return res;
+	}
+    static vector<long long> karatsubaMultiply(const vector<long long> &a, const vector<long long> &b) {
+		int n = a.size();
+		vector<long long> res(n + n);
+		if (n <= 32) {
+			for (int i = 0; i < n; i++)
+				for (int j = 0; j < n; j++)
+					res[i + j] += a[i] * b[j];
+			return res;
+		}
+		int k = n >> 1;
+		vector<long long> a1(a.begin(), a.begin() + k);
+		vector<long long> a2(a.begin() + k, a.end());
+		vector<long long> b1(b.begin(), b.begin() + k);
+		vector<long long> b2(b.begin() + k, b.end());
+		vector<long long> a1b1 = karatsubaMultiply(a1, b1);
+		vector<long long> a2b2 = karatsubaMultiply(a2, b2);
+		for (int i = 0; i < k; i++) a2[i] += a1[i];
+		for (int i = 0; i < k; i++) b2[i] += b1[i];
+		vector<long long> r = karatsubaMultiply(a2, b2);
+		for (int i = 0; i < (int) a1b1.size(); i++) r[i] -= a1b1[i];
+		for (int i = 0; i < (int) a2b2.size(); i++) r[i] -= a2b2[i];
+		for (int i = 0; i < (int) r.size(); i++) res[i + k] += r[i];
+		for (int i = 0; i < (int) a1b1.size(); i++) res[i] += a1b1[i];
+		for (int i = 0; i < (int) a2b2.size(); i++) res[i + n] += a2b2[i];
+		return res;
+	}
+    bignum operator*(const bignum &v) const {
+		vector<int> a6 = convertBase(this->a, baseDigits, 6);
+		vector<int> b6 = convertBase(v.a, baseDigits, 6);
+		vector<long long> a(a6.begin(), a6.end());
+		vector<long long> b(b6.begin(), b6.end());
+		while (a.size() < b.size()) a.push_back(0);
+		while (b.size() < a.size()) b.push_back(0);
+		while (a.size() & (a.size() - 1)) a.push_back(0), b.push_back(0);
+		vector<long long> c = karatsubaMultiply(a, b);
+		bignum res;
+		res.sign = sign * v.sign;
+		for (int i = 0, carry = 0; i < (int) c.size(); i++) {
+			long long cur = c[i] + carry;
+			res.a.push_back((int) (cur % 1000000));
+			carry = (int) (cur / 1000000);
+		}
+		res.a = convertBase(res.a, 6, baseDigits);
+		res.trim();
+		return res;
+	}
+    void operator*=(int v) {
+		if (v < 0)
+			sign = -sign, v = -v;
+		for (int i = 0, carry = 0; i < (int) a.size() || carry; ++i) {
+			if (i == (int) a.size())
+				a.push_back(0);
+			long long cur = a[i] * (long long) v + carry;
+			carry = (int) (cur / base);
+			a[i] = (int) (cur % base);
+			//asm("divl %%ecx" : "=a"(carry), "=d"(a[i]) : "A"(cur), "c"(base));
+		}
+		trim();
+	}
+	bignum operator*(int v) const {
+		bignum res = *this;
+		res *= v;
+		return res;
+	}
+	void operator*=(long long v) {
+		if (v < 0)
+			sign = -sign, v = -v;
+		if(v > base){
+			*this = *this * (v / base) * base + *this * (v % base);
+			return ;
+		}
+		for (int i = 0, carry = 0; i < (int) a.size() || carry; ++i) {
+			if (i == (int) a.size())
+				a.push_back(0);
+			long long cur = a[i] * (long long) v + carry;
+			carry = (int) (cur / base);
+			a[i] = (int) (cur % base);
+			//asm("divl %%ecx" : "=a"(carry), "=d"(a[i]) : "A"(cur), "c"(base));
+		}
+		trim();
+	}
+ 
+	bignum operator*(long long v) const {
+		bignum res = *this;
+		res *= v;
+		return res;
+	}
+    pair<bignum, bignum> divmod(const bignum &a1, const bignum &b1) {
+		int norm = base / (b1.a.back() + 1);
+		bignum a = a1.abs() * norm;
+		bignum b = b1.abs() * norm;
+		bignum q, r;
+		q.a.resize(a.a.size());
+ 
+		for (int i = a.a.size() - 1; i >= 0; i--) {
+			r *= base;
+			r += a.a[i];
+			int s1 = r.a.size() <= b.a.size() ? 0 : r.a[b.a.size()];
+			int s2 = r.a.size() <= b.a.size() - 1 ? 0 : r.a[b.a.size() - 1];
+			int d = ((long long) base * s1 + s2) / b.a.back();
+			r -= b * d;
+			while (r < 0)
+				r += b, --d;
+			q.a[i] = d;
+		}
+ 
+		q.sign = a1.sign * b1.sign;
+		r.sign = a1.sign;
+		q.trim();
+		r.trim();
+		return make_pair(q, r / norm);
+	}
+    bignum operator/(const bignum &v) const {
+        pair<bignum, bignum> ans = divmod(*this,v);
+		return ans.first;
+	}
+ 
+	bignum operator%(const bignum &v) const {
+		pair<bignum, bignum> ans = divmod(*this,v);
+		return ans.second;
+	}
 };
 
 int main() {
+    bignum a, b;
+    a = 10LL;
+    b = b - a;
+    cout << b.a[0] <<"\n";
     return 0;
 }
