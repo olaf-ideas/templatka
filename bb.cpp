@@ -10,6 +10,12 @@ struct bignum {
     vector<int> a;
     int sign;
     bignum() : sign(1) {}
+	bignum(long long b) {
+		*this = b;
+	}
+	bignum(const string &s) {
+		read(s);
+	}
     int size() {
         if (a.empty()) return 0;
         int ans = ((int)a.size()-1)*baseDigits;
@@ -99,7 +105,7 @@ struct bignum {
 		*this = *this / v;
 	}
     void operator+=(const long long &v) {
-        bignum tmp; tmp.a.push_back(v);
+        bignum tmp; tmp.a.push_back((int)v);
         return *this += tmp;
     }
     void trim() {
@@ -127,7 +133,7 @@ struct bignum {
 		return res;
 	}
     static vector<long long> karatsubaMultiply(const vector<long long> &a, const vector<long long> &b) {
-		int n = a.size();
+		int n = (int)a.size();
 		vector<long long> res(n + n);
 		if (n <= 32) {
 			for (int i = 0; i < n; i++)
@@ -207,13 +213,12 @@ struct bignum {
 		}
 		trim();
 	}
- 
 	bignum operator*(long long v) const {
 		bignum res = *this;
 		res *= v;
 		return res;
 	}
-    pair<bignum, bignum> divmod(const bignum &a1, const bignum &b1) {
+    bignum divmod(const bignum &a1, const bignum &b1) {
 		int norm = base / (b1.a.back() + 1);
 		bignum a = a1.abs() * norm;
 		bignum b = b1.abs() * norm;
@@ -236,23 +241,51 @@ struct bignum {
 		r.sign = a1.sign;
 		q.trim();
 		r.trim();
-		return make_pair(q, r / norm);
+		return q;
 	}
-    bignum operator/(const bignum &v) const {
-        pair<bignum, bignum> ans = divmod(*this,v);
-		return ans.first;
+	bignum operator/(const bignum &v) {
+		return divmod(*this, v);
 	}
- 
-	bignum operator%(const bignum &v) const {
-		pair<bignum, bignum> ans = divmod(*this,v);
-		return ans.second;
+	bignum operator%(const bignum &v) {
+		bignum tmp = *this-(*this/v)*v;
+		return tmp;
+	}
+	void read(const string &s) {
+		sign = 1;
+		a.clear();
+		int pos = 0;
+		while (pos < (int) s.size() && (s[pos] == '-' || s[pos] == '+')) {
+			if (s[pos] == '-')
+				sign = -sign;
+			pos++;
+		}
+		for (int i = (int)s.size() - 1; i >= pos; i -= baseDigits) {
+			int x = 0;
+			for (int j = max(pos, i - baseDigits + 1); j <= i; j++)
+				x = x * 10 + s[j] - '0';
+			a.push_back(x);
+		}
+		trim();
+	}
+	friend istream& operator>>(istream &stream, bignum &v) {
+		string s;
+		stream >> s;
+		v.read(s);
+		return stream;
+	}
+	friend ostream& operator<<(ostream &stream, const bignum &v) {
+		if (v.sign == -1) stream << '-';
+		stream << (v.a.empty() ? 0 : v.a.back());
+		for (int i = (int) v.a.size() - 2; i >= 0; --i)
+			stream << setw(baseDigits) << setfill('0') << v.a[i];
+		return stream;
 	}
 };
 
 int main() {
     bignum a, b;
-    a = 10LL;
-    b = b - a;
-    cout << b.a[0] <<"\n";
+    cin >> a >> b;
+	cout << a/b << " " << a%b << "\n";
+	cout << bignum(123) << "\n";
     return 0;
 }
